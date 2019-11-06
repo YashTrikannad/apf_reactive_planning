@@ -1,4 +1,4 @@
-function [qNext, isDone] = potentialFieldStep_groupno(qCurr, map, robot)
+function [qNext, isDone] = potentialFieldStep_33(qCurr, map, robot)
 % POTENTIALFIELDSTEP_GROUPNO Calculates a single step in a potential field
 %   planner based on the virtual forces exerted by all of the elements in
 %   map. This function will be called over and over until isDone is set.
@@ -32,6 +32,7 @@ isDone = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%                  Algorithm Starts Here             %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,4 +1,4 @@
-function J = calcJacobian_groupno(q, joint, robot)
+function J = calcJacobian_33(q, joint, robot)
 % CALCJACOBIAN_GROUPNO Calculate the Jacobian of a particular joint of the 
 %   robot in a given configuration. CHANGE GROUPNO TO YOUR GROUP NUMBER.
 %

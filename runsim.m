@@ -60,7 +60,7 @@ qCurr = start;
 % While not finished, take a step
 while ~isDone
     % Calculate the potential field step
-   [qNext, isDone] = potentialFieldStep_groupno(qCurr, map, robot);
+   [qNext, isDone] = potentialFieldStep_11(qCurr, map, robot);
    % Take the step
    lynxServo(qNext);
    qCurr = qNext;

@@ -1,4 +1,4 @@
-function tau = forceToTorque_groupno(F, J)
+function tau = forceToTorque_33(F, J)
 % FORCETOTORQUE_GROUPNO Calculate the joint torques required to exert a 
 %   specific set of end-effector forces/torques in a given configuration.
 %   Note that you can write this function entirely generally, with no
@@ -18,8 +18,7 @@ function tau = forceToTorque_groupno(F, J)
 %%%                  Your Code Starts Here             %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
+tau = J'*F';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%                  Your Code Ends Here               %%%
