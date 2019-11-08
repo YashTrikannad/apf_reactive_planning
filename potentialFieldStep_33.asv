@@ -29,7 +29,6 @@ qNext = qCurr;
 qNext(1) = qNext(1)+.01;
 isDone = 0;
 
-qCurr = calculateFK_sol(qCurr, robot);
 qEnd = calculateFK_sol(map.goal, robot);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,9 +38,7 @@ qEnd = calculateFK_sol(map.goal, robot);
 if any((qCurr(1,1:5) - qEnd(1,1:5))>epsilon)
     isDone = 0;
 end
-
 %% Calculate the attractive force
-
 [qCurr,~] = calculateFK_sol(qCurr); 
 [qEnd, ~ ] = calculateFK_sol(qEnd); 
     
@@ -170,7 +167,7 @@ alpha = 0.02;
 if (norm(tau)~=0)
     qNext = qCurr' + alpha * (tau / norm(tau));
 else
-    qNext = qCurr';
+    qCurr = qCurr';
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

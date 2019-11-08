@@ -11,7 +11,7 @@ addpath('maps')
 
 start = [0,0,0,0,0,0];
 goal = [0,0,1,0,0,0];
-mapToUse = 'map1.txt';
+mapToUse = 'map2.txt';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%   Do not modify after this   %%%
@@ -60,7 +60,7 @@ qCurr = start;
 % While not finished, take a step
 while ~isDone
     % Calculate the potential field step
-   [qNext, isDone] = potentialFieldStep_11(qCurr, map, robot);
+   [qNext, isDone] = potentialFieldStep_33(qCurr, map, robot);
    % Take the step
    lynxServo(qNext);
    qCurr = qNext;
