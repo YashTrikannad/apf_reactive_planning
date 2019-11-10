@@ -11,7 +11,7 @@ addpath('maps')
 
 start = [0,0,0,0,0,0];
 goal = [0,0,1,0,0,0];
-mapToUse = 'map2.txt';
+mapToUse = 'map1.txt';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%   Do not modify after this   %%%

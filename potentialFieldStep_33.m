@@ -29,21 +29,20 @@ qNext = qCurr;
 qNext(1) = qNext(1)+.01;
 isDone = 0;
 
-qCurr = calculateFK_sol(qCurr, robot);
-qEnd = calculateFK_sol(map.goal, robot);
+start_joint_coords = calculateFK_sol(qCurr, robot);
+end_joint_coords = calculateFK_sol(map.goal, robot);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%                  Algorithm Starts Here             %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if any((qCurr(1,1:5) - qEnd(1,1:5))>epsilon)
-    isDone = 0;
+epsilon = 0.1;
+rho = 10;
+
+if all(abs(qCurr(1,1:5) - map.goal(1,1:5))<epsilon)
+    isDone = 1;
+    return;
 end
-
-%% Calculate the attractive force
-
-[qCurr,~] = calculateFK_sol(qCurr); 
-[qEnd, ~ ] = calculateFK_sol(qEnd); 
     
 %% Calculate the attractive force, a 6x1 vector 
 
@@ -60,8 +59,8 @@ for joint = 1:6
     %% Calculate the attractive joint effort for joint i 
     % Find the positions of the current position and the end goal of the
     % joint i. 
-    currPosJointI = qCurr(joint,:);
-    endPosJointI = qEnd(joint,:);
+    currPosJointI = start_joint_coords(joint,:);
+    endPosJointI = end_joint_coords(joint,:);
         
     % instantiate Fa 
     Fa = zeros(1,3); 
@@ -71,11 +70,11 @@ for joint = 1:6
         % if joint i is not at its goal position, then calculate Fa
         Fa = - (currPosJointI - endPosJointI) / norm(currPosJointI - endPosJointI);
     else
-        Fa = zeros(1,3); 
+        continue;
     end 
         
     % find the jacobian for joint i 
-    J = calcJacobian_33(qCurr,joint);
+    J = calcJacobian_33(qCurr,joint, robot);
 
     % substitute values of qCur into symbolic J 
     J = subs(J, q1, qCurr(1));
@@ -105,59 +104,33 @@ for joint = 1:6
     %% Calculate the repulsive forces 
     % initialize a Fr vector;
     Fr = zeros(1,3);
-
-    % add 20mm to our ris to have a larger sphere of influence
-    additionalSphereOfInfluence = 20; %mm
-    ri = ri + additionalSphereOfInfluence;
-        
+         
     %loop over all the obstacles we have
-    for obstacle = 1:size(map.obstacle,1)
+    for obstacle = 1:size(map.obstacles,1)
         %find the center point of the particular obstacles
-        posOfObstacle = map.obstacle(obstacle,:);
+        posOfObstacle = map.obstacles(obstacle,:);
 
         %find the radius of the particular obstacle
-        radiusi = ri(obstacle,1);
-
-        %find the distance between the vector of joints and the current
-        %obstacle
-        distBetweenJointAndObstacle = norm(currPosJointI-posOfObstacle);
+        distance = distPointToBox(currPosJointI, posOfObstacle);
 
         %figure out whether the joint falls within the sphere of
         %influence of the obstacle. this is a boolean 
-        jointIsWithinSphereOfInfluence = distBetweenJointAndObstacle < radiusi;
+        jointIsWithinSphereOfInfluence = distance < rho;
 
-        %Robot is not within the sphere of influence of the obstacle
-        if (~jointIsWithinSphereOfInfluence)
-            %Fr is still zeros.
-            Fr = zeros(1,3); 
-        else
-            %Robot is within the sphere of influence of the obstacle
-            nu = 13;
-            %find the expression Fr
-            firstPart = zeros(1,3); 
-            secondPart = zeros(1,3); 
-            thirdPart = zeros(1,3); 
-            if (currPosJointI>0 & posOfObstacle >0)
-                firstPart = 1 ./ currPosJointI - 1 ./posOfObstacle;
-            end 
-            if (currPosJointI>0)
-                secondPart = 1./(currPosJointI .^ 2);
-            end 
-            b = zeros(1,3);
-            if (norm(currPosJointI - posOfObstacle)~=0)
-                b = (currPosJointI - posOfObstacle)/norm(currPosJointI - posOfObstacle) * radiusi + posOfObstacle;
-            end 
-            if (norm(currPosJointI - b)~=0)
-                thirdPart = (currPosJointI - b)/norm(currPosJointI - b);
-            end 
-            Fr = nu * firstPart .* secondPart .* thirdPart;
+        %Robot is within the sphere of influence of the obstacle
+        nu = 0.1;
+        %find the expression Fr
+        firstPart = zeros(1,3);
+        if(jointIsWithinSphereOfInfluence)
+            firstPart = 1 ./ currPosJointI - 1 ./distance;
         end
+        Fr = nu * firstPart;
+    end
 
-        %find the taur for obstacle j on joint i
-        taur = Jv'*Fr';
-        %add taur to taurTotal
-        taurTotal = taurTotal + taur; 
-    end   
+    %find the taur for obstacle j on joint i
+    taur = Jv'*Fr';
+    %add taur to taurTotal
+    taurTotal = taurTotal + taur; 
 end 
 
 %set the tau = to the tauatotal + the taurtotal
@@ -173,6 +146,7 @@ else
     qNext = qCurr';
 end
 
+qNext = qNext';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%                  Algorithm Ends Here               %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
