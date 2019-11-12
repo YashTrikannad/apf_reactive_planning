@@ -10,8 +10,8 @@ addpath('maps')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start = [0,0,0,0,0,0];
-goal = [0,0,1,0,0,0];
-mapToUse = 'map1.txt';
+goal = [pi/2,0,0,0,0,0];
+mapToUse = 'map2.txt';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%   Do not modify after this   %%%
@@ -65,5 +65,5 @@ while ~isDone
    lynxServo(qNext);
    qCurr = qNext;
    % Pause for simulation
-   pause(0.2);  % You may change this to speed up the sim or slow it down
+   pause(0.1);  % You may change this to speed up the sim or slow it down
 end

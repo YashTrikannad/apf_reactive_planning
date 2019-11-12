@@ -35,118 +35,62 @@ end_joint_coords = calculateFK_sol(map.goal, robot);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%                  Algorithm Starts Here             %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+no_of_obs = size(map.obstacles,1);
 
-epsilon = 0.1;
-rho = 10;
+eta = 4*10^(3);
+rho_not = 200 ; 
+zeta = 100; 
+D = 10; 
+epsilon = 1; 
+alpha = 0.01;
 
 if all(abs(qCurr(1,1:5) - map.goal(1,1:5))<epsilon)
     isDone = 1;
+    fprintf("reached target")
     return;
 end
-    
+
+tau_1 = zeros(6,1);   
+
 %% Calculate the attractive force, a 6x1 vector 
+for i = 1 : 7 % for 6 joints
 
-%initialize taua
-tauaTotal = zeros(6,1); 
-taurTotal = zeros(6,1); 
-    
-%Find all the J matrices using qCurr 
-JAll = [];
-    
-syms q1 q2 q3 q4 q5 q6
+      Frep= zeros(1,3);
+      Fatt = zeros(1,3);
+      
+      %attractive force
+      if norm(end_joint_coords(i,:) - start_joint_coords (i,:)) < D  % for a distance lesser than D would be parabolic curve
+            %parabolic wwell
+            Fatt = -zeta.*( (start_joint_coords(i, :) - end_joint_coords( i , :))');           
 
-for joint = 1:6
-    %% Calculate the attractive joint effort for joint i 
-    % Find the positions of the current position and the end goal of the
-    % joint i. 
-    currPosJointI = start_joint_coords(joint,:);
-    endPosJointI = end_joint_coords(joint,:);
-        
-    % instantiate Fa 
-    Fa = zeros(1,3); 
-        
-    % if case over whether the current pos of joint i is at it's goal 
-    if( norm(currPosJointI - endPosJointI) ~= 0)
-        % if joint i is not at its goal position, then calculate Fa
-        Fa = - (currPosJointI - endPosJointI) / norm(currPosJointI - endPosJointI);
-    else
-        continue;
-    end 
-        
-    % find the jacobian for joint i 
-    J = calcJacobian_33(qCurr,joint, robot);
 
-    % substitute values of qCur into symbolic J 
-    J = subs(J, q1, qCurr(1));
-    J = subs(J, q2, qCurr(2));
-    J = subs(J, q3, qCurr(3));
-    J = subs(J, q4, qCurr(4));
-    J = subs(J, q5, qCurr(5));
-    J = subs(J, q6, qCurr(6));
-        
-    % Convert sym matrix back to numeric
-    J = double(J);
-
-    % Only take the first joint columns 
-    Jnew = J(:,1:joint); 
-        
-    % add zeros if Jnew is not a 6x5
-    colsOfZerosToAdd = 6 - joint;
-    Jnew = [Jnew, zeros(6,colsOfZerosToAdd)];
-        
-    % calculate the taua for this joint 
-    Jv = Jnew(1:3,:);
-    taua = Jv'*Fa'; %6x1   =    [6x3][3x1]
-
-    % find the total Taua by adding the taua for this joint 
-    tauaTotal = tauaTotal + taua; %final result of 5x6 matrix
+      else  % conic well
+            
+           Fatt = -D*zeta*((start_joint_coords(i,:) - end_joint_coords(i,:))' / norm(start_joint_coords(i , : ) - end_joint_coords( i , :)));
+           
+      end
     
     %% Calculate the repulsive forces 
-    % initialize a Fr vector;
-    Fr = zeros(1,3);
-         
-    %loop over all the obstacles we have
-    for obstacle = 1:size(map.obstacles,1)
-        %find the center point of the particular obstacles
-        posOfObstacle = map.obstacles(obstacle,:);
-
-        %find the radius of the particular obstacle
-        distance = distPointToBox(currPosJointI, posOfObstacle);
-
-        %figure out whether the joint falls within the sphere of
-        %influence of the obstacle. this is a boolean 
-        jointIsWithinSphereOfInfluence = distance < rho;
-
-        %Robot is within the sphere of influence of the obstacle
-        nu = 0.1;
-        %find the expression Fr
-        firstPart = zeros(1,3);
-        if(jointIsWithinSphereOfInfluence)
-            firstPart = 1 ./ currPosJointI - 1 ./distance;
-        end
-        Fr = nu * firstPart;
+   
+    for k = 1:no_of_obs
+            [rhoiq , deltarho ]  = distPointToBox(start_joint_coords(i,:), map.obstacles(k,:));        
+            if (rhoiq < rho_not )   
+                 Frep = Frep + eta*( (1/ rhoiq ) - (1/rho_not)) * ( 1/ (rhoiq)^2) * deltarho ;% passing each force of each joint to calculate torque.
+            end
     end
 
-    %find the taur for obstacle j on joint i
-    taur = Jv'*Fr';
-    %add taur to taurTotal
-    taurTotal = taurTotal + taur; 
-end 
+    Frep = Frep' ;
+    Jacobian = (calcJacobian_33(qCurr , i, robot ))';
+    Jacobian = Jacobian(1:3);
+    F_tot = (Fatt + Frep);
+    tau_1 = tau_1 + Jacobian*F_tot; 
 
-%set the tau = to the tauatotal + the taurtotal
-tau = tauaTotal + taurTotal;
-
-%set the step rate
-alpha = 0.02;
-
-%ensure there is not
-if (norm(tau)~=0)
-    qNext = qCurr' + alpha * (tau / norm(tau));
-else
-    qNext = qCurr';
 end
+ 
+tau_1 = tau_1';
 
-qNext = qNext';
+qNext = qCurr + (alpha * (tau_1 / norm (tau_1)));
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%                  Algorithm Ends Here               %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
